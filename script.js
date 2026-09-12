@@ -173,9 +173,11 @@ function markAddedButton(productId) {
 // are correct whether the site lives at the root of a domain or in a
 // GitHub Pages project subfolder like /LumiNoor/.
 function siteBaseUrl() {
-  const path = window.location.pathname.replace(/(?:index|product)\.html$/, '');
-  const normalized = path.endsWith('/') ? path : path + '/';
-  return `${window.location.origin}${normalized}`;
+  let directory = window.location.pathname.slice(0, window.location.pathname.lastIndexOf("/") + 1);
+  if (directory.endsWith("/tools/")) {
+    directory = directory.slice(0, -"tools/".length);
+  }
+  return `${window.location.origin}${directory}`;
 }
 
 // Message used for a specific product's direct WhatsApp action. The detail
@@ -528,13 +530,27 @@ function cardHTML(p) {
     : p.name;
 
   return `
-    <article class="card" id="${p.id}" data-id="${p.id}" data-name="${p.name.toLowerCase()}" data-color="${p.color}" tabindex="0" role="link" aria-label="View ${displayName}">
+    <article class="card" id="${p.id}" data-id="${p.id}" data-name="${p.name.toLowerCase()}" data-color="${p.color}" tabindex="0" aria-label="View ${displayName}">
       <div class="card-media">
         <span class="badge-sale">Sale</span>
         <img src="${p.image}" alt="${p.name} colored contact lens" loading="lazy">
-        <button class="buy-btn" type="button" data-id="${p.id}" data-action="add-to-cart">
-          <span class="btn-label">Add to cart</span>
-        </button>
+        <div class="card-actions">
+          <a class="card-whatsapp-btn" href="${buildWhatsAppLink(productMessage(p))}" target="_blank" rel="noopener" aria-label="Buy ${displayName} on WhatsApp">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M17.5 14.4c-.3-.1-1.7-.8-1.9-.9-.3-.1-.4-.1-.6.1-.2.3-.7.9-.8 1-.2.2-.3.2-.5.1-.3-.1-1.2-.4-2.2-1.4-.8-.7-1.4-1.6-1.5-1.9-.2-.3 0-.4.1-.6l.4-.5c.1-.2.2-.3.2-.5.1-.2 0-.4 0-.5-.1-.1-.6-1.5-.8-2-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s1 2.6 1.1 2.7c.1.2 2 3 4.7 4.2.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.6-.1 1.7-.7 1.9-1.3.2-.7.2-1.2.2-1.3-.1-.1-.3-.2-.5-.3z" />
+              <path d="M12 2a10 10 0 1 0 8.6 15L22 22l-5.2-1.4A10 10 0 0 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3.1.8.8-3-.2-.3A8.2 8.2 0 1 1 12 20.2z" />
+            </svg>
+            <span>Buy on WhatsApp</span>
+          </a>
+          <button class="buy-btn" type="button" data-id="${p.id}" data-action="add-to-cart">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L21 8H6" />
+              <circle cx="9" cy="20" r="1.2" />
+              <circle cx="18" cy="20" r="1.2" />
+            </svg>
+            <span class="btn-label">Add to cart</span>
+          </button>
+        </div>
       </div>
       <div class="card-body">
         <p class="name"><a href="product.html?id=${p.id}">${displayName}</a></p>
@@ -623,11 +639,9 @@ if (grid || dahabGrids.length) {
 if (cartKoreanGrid || cartDahabGrid) {
   if (cartKoreanGrid) {
     cartKoreanGrid.innerHTML = getPreviewProducts(KOREAN_PRODUCTS).map(cardHTML).join("");
-    attachBuyButtonListener(cartKoreanGrid);
   }
   if (cartDahabGrid) {
     cartDahabGrid.innerHTML = getDahabPreviewProducts().map(cardHTML).join("");
-    attachBuyButtonListener(cartDahabGrid);
   }
 }
 
@@ -653,8 +667,12 @@ function applyFilters() {
     card.style.display = show ? "" : "none";
     if (show) visible++;
   });
-  resultsCount.textContent = `${visible} style${visible === 1 ? "" : "s"}`;
-  emptyState.classList.toggle("show", visible === 0);
+  if (resultsCount) {
+    resultsCount.textContent = `${visible} style${visible === 1 ? "" : "s"}`;
+  }
+  if (emptyState) {
+    emptyState.classList.toggle("show", visible === 0);
+  }
   updateResultsTitle();
 }
 
@@ -702,24 +720,20 @@ function openWhatsApp(message) {
   window.open(buildWhatsAppLink(message), "_blank", "noopener");
 }
 
-function attachBuyButtonListener(gridElement) {
-  if (!gridElement) return;
-  gridElement.addEventListener("click", (e) => {
-    const btn = e.target.closest(".buy-btn");
-    if (!btn) return;
-    const product = PRODUCTS.find((p) => p.id === btn.dataset.id);
+document.addEventListener("click", (event) => {
+  const buyButton = event.target.closest(".buy-btn");
+  if (buyButton) {
+    event.preventDefault();
+    event.stopPropagation();
+    const product = PRODUCTS.find((item) => item.id === buyButton.dataset.id);
     if (!product) return;
     addToCart(product.id, 1);
     animateCartButton();
     markAddedButton(product.id);
     showToast(`${product.name} added to cart`);
-  });
-}
+    return;
+  }
 
-attachBuyButtonListener(grid);
-dahabGrids.forEach(attachBuyButtonListener);
-
-document.addEventListener("click", (event) => {
   const card = event.target.closest(".card[data-id]");
   if (!card || event.target.closest("a, button")) return;
   window.location.href = `product.html?id=${encodeURIComponent(card.dataset.id)}`;
