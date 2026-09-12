@@ -90,8 +90,36 @@ input {
   font-size: 12.5px;
   letter-spacing: .06em;
   text-align: center;
-  padding: 8px 16px;
+  height: 34px;
+  padding: 0 16px;
   text-transform: uppercase;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.topbar-track {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  width: 300vw;
+  transition: transform .65s ease-in-out;
+}
+
+.topbar-track span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 100vw;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .topbar-track {
+    transition: none;
+  }
 }
 
 /* ---------- Header ---------- */
@@ -369,25 +397,28 @@ nav.main-nav a.active::after {
   }
 }
 
-    width: auto;
-    min-width: 0;
-    min-height: 32px;
-    padding: 5px 3px;
-    border-radius: 8px;
-    font-size: 7px;
-    gap: 2px;
-    white-space: nowrap;
+@media (max-width:400px) {
+  .header-row {
+    gap: 8px;
+    padding-left: 16px;
+    padding-right: 16px;
   }
 
-  .card-whatsapp-btn svg,
-  .buy-btn svg {
-    width: 11px;
-    height: 11px;
+  .header-actions {
+    gap: 4px;
+  }
+
+  .header-actions > .icon-btn[aria-label="Account"] {
+    display: none;
+  }
+
+  .whatsapp-header-btn span {
+    display: none;
+  }
 
   .whatsapp-header-btn {
     width: 38px;
-    width: 100%;
-    font-size: 9px;
+    padding: 0;
     justify-content: center;
   }
 
@@ -1031,7 +1062,6 @@ body.search-active .grid-section {
 }
 
 .card {
-  position: relative;
   background: var(--card);
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -1150,7 +1180,7 @@ body.search-active .grid-section {
 
 .card:hover .card-actions,
 .card-actions:focus-within {
-  bottom: 8px;
+  bottom: 8px !important;
 }
 
 .cart-shop .card-whatsapp-btn {
@@ -1168,11 +1198,12 @@ body.search-active .grid-section {
 
 @media (max-width:560px) {
   .card-actions {
-    position: static;
-    width: auto;
-    margin: 8px 8px 0;
     grid-template-columns: 1fr 1fr;
+    bottom: -48px;
     gap: 6px;
+    left: auto;
+    right: 8px;
+    width: auto;
   }
 
   .cart-shop .card-actions {
@@ -1181,39 +1212,42 @@ body.search-active .grid-section {
 
   .card-whatsapp-btn,
   .buy-btn {
-    width: auto;
-    min-width: 0;
+    width: 32px;
+    min-width: 32px;
     min-height: 32px;
-    padding: 5px 3px;
-    border-radius: 8px;
-    justify-self: stretch;
-    font-size: 7px;
-    gap: 2px;
-    white-space: nowrap;
+    padding: 0;
+    border-radius: 50%;
+    justify-self: end;
+    font-size: 0;
+    gap: 0;
   }
 
   .card-whatsapp-btn span,
   .buy-btn .btn-label {
-    position: static;
-    width: auto;
-    height: auto;
+    position: absolute;
+    width: 1px;
+    height: 1px;
     padding: 0;
-    margin: 0;
-    overflow: visible;
-    clip: auto;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
   }
 
   .card-whatsapp-btn svg,
   .buy-btn svg {
-    width: 11px;
-    height: 11px;
+    width: 15px;
+    height: 15px;
   }
 
   .cart-shop .buy-btn {
-    width: 100%;
-    font-size: 9px;
+    width: 32px;
+  }
+
+  .card:hover .card-actions,
+  .card-actions:focus-within {
+    bottom: 8px;
   }
 }
 
