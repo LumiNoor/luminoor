@@ -2,8 +2,8 @@
    LumiNoor — site logic
      1. PRODUCTS  — the product catalog (name, photo, color tag, price).
     2. Rendering — turns PRODUCTS into the product grid.
-     3. WhatsApp  — every "buy" action opens a WhatsApp chat instead of a
-                     traditional cart/checkout.
+    3. Cart + WhatsApp — customers can add shades to a local cart, then send
+             the complete selection to WhatsApp for confirmation.
      4. Tools     — the Cost Per Day calculator on the homepage. The Shade
                      Finder quiz lives on its own page (tools/shade-finder.html)
                      with its own copy of PRODUCTS — see that file's comments.
@@ -16,28 +16,172 @@
    update the copy inside tools/shade-finder.html and products/*.html.
    ========================================================================== */
 const WHATSAPP_NUMBER = "923372110771";
+const CART_STORAGE_KEY = "luminoor-cart";
 
 function buildWhatsAppLink(message) {
   const encoded = encodeURIComponent(message);
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}`;
 }
 
+function getCart() {
+  try {
+    const cart = JSON.parse(localStorage.getItem(CART_STORAGE_KEY) || "[]");
+    return Array.isArray(cart) ? cart : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function saveCart(cart) {
+  localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+}
+
+function findProductById(productId) {
+  return PRODUCTS.find((product) => product.id === productId) || null;
+}
+
+function cartItemCount() {
+  return getCart().reduce((total, item) => total + Number(item.qty || 0), 0);
+}
+
+function addToCart(productId, qty = 1) {
+  const cart = getCart();
+  const existing = cart.find((item) => item.id === productId);
+
+  if (existing) {
+    existing.qty += qty;
+  } else {
+    cart.push({ id: productId, qty });
+  }
+
+  saveCart(cart);
+  updateCartButton();
+  if (typeof renderCartPage === "function") {
+    renderCartPage();
+  }
+}
+
+function removeFromCart(productId) {
+  const cart = getCart().filter((item) => item.id !== productId);
+  saveCart(cart);
+  updateCartButton();
+  if (typeof renderCartPage === "function") {
+    renderCartPage();
+  }
+}
+
+function updateCartQuantity(productId, delta) {
+  const cart = getCart();
+  const item = cart.find((entry) => entry.id === productId);
+  if (!item) return;
+
+  item.qty += delta;
+  if (item.qty <= 0) {
+    removeFromCart(productId);
+    return;
+  }
+
+  saveCart(cart);
+  updateCartButton();
+  if (typeof renderCartPage === "function") {
+    renderCartPage();
+  }
+}
+
+function clearCart() {
+  saveCart([]);
+  updateCartButton();
+  if (typeof renderCartPage === "function") {
+    renderCartPage();
+  }
+}
+
+function cartSubtotal() {
+  return getCart().reduce((total, item) => {
+    const product = findProductById(item.id);
+    if (!product) return total;
+    return total + product.sale * Number(item.qty || 0);
+  }, 0);
+}
+
+function buildCartWhatsAppMessage() {
+  const cart = getCart();
+
+  if (!cart.length) {
+    return "Hi LumiNoor! I would like to place an order, but my cart is empty. Please help me choose the right shades.";
+  }
+
+  const lines = [
+    "Hi LumiNoor! I'd like to place this order:",
+    ""
+  ];
+
+  cart.forEach((item, index) => {
+    const product = findProductById(item.id);
+    if (!product) return;
+    const itemTotal = product.sale * Number(item.qty || 0);
+    lines.push(`${index + 1}. ${product.name} x ${item.qty} — Rs.${itemTotal.toLocaleString()}.00 PKR`);
+  });
+
+  const total = cartSubtotal();
+  lines.push(`Total: Rs.${total.toLocaleString()}.00 PKR`);
+  lines.push("");
+  lines.push("Please confirm availability and delivery details.");
+  return lines.join("\n");
+}
+
+function updateCartButton() {
+  const cartButton = document.getElementById("cartButton");
+  if (!cartButton) return;
+
+  const badge = cartButton.querySelector(".cart-badge");
+  const count = cartItemCount();
+  if (badge) {
+    badge.textContent = count;
+    badge.hidden = count === 0;
+  }
+}
+
+function animateCartButton() {
+  const cartButton = document.getElementById("cartButton");
+  if (!cartButton) return;
+
+  cartButton.classList.remove("bump");
+  void cartButton.offsetWidth;
+  cartButton.classList.add("bump");
+  setTimeout(() => cartButton.classList.remove("bump"), 320);
+}
+
+function markAddedButton(productId) {
+  document.querySelectorAll(`.buy-btn[data-id="${productId}"]`).forEach((button) => {
+    button.classList.remove("added");
+    void button.offsetWidth;
+    button.classList.add("added");
+    const label = button.querySelector(".btn-label");
+    if (label) {
+      label.textContent = "Added";
+    }
+    setTimeout(() => {
+      button.classList.remove("added");
+      const text = button.querySelector(".btn-label");
+      if (text) text.textContent = "Add to cart";
+    }, 900);
+  });
+}
+
 // Works out the folder containing index.html, so links built at runtime
 // are correct whether the site lives at the root of a domain or in a
 // GitHub Pages project subfolder like /LumiNoor/.
 function siteBaseUrl() {
-  const path = window.location.pathname.replace(/index\.html$/, '');
+  const path = window.location.pathname.replace(/(?:index|product)\.html$/, '');
   const normalized = path.endsWith('/') ? path : path + '/';
   return `${window.location.origin}${normalized}`;
 }
 
-// Message used for a specific product's "Buy on WhatsApp" button.
-// Links to that product's own page (products/<id>.html) so the WhatsApp
-// preview shows THAT lens's photo, not a generic site preview.
+// Message used for a specific product's direct WhatsApp action. The detail
+// page URL keeps the selected lens available when the conversation opens.
 function productMessage(product) {
-  const productUrl = product.category === "gold"
-    ? `${siteBaseUrl()}#${product.id}`
-    : `${siteBaseUrl()}products/${product.id}.html`;
+  const productUrl = `${siteBaseUrl()}product.html?id=${product.id}`;
   return `Hi LumiNoor! I'd like to order ${product.name} (Rs.${product.sale}). Is it in stock?\n\n${productUrl}`;
 }
 
@@ -265,6 +409,7 @@ const DAHAB_PLATINUM_PRODUCTS = [
   {
     id: "alaska",
     name: "Alaska",
+    category: "platinum",
     image: "Shades/P1-Alaska.png",
     color: "blue",
     swatch: ["#B0D8E9", "#3C7FA1"],
@@ -274,6 +419,7 @@ const DAHAB_PLATINUM_PRODUCTS = [
   {
     id: "hawaii",
     name: "Hawaii",
+    category: "platinum",
     image: "Shades/P4-Hawaii.png",
     color: "green",
     swatch: ["#B5D9B0", "#557A52"],
@@ -283,6 +429,7 @@ const DAHAB_PLATINUM_PRODUCTS = [
   {
     id: "khaki",
     name: "Khaki",
+    category: "platinum",
     image: "Shades/P8-Khaki.png",
     color: "brown",
     swatch: ["#B5A16D", "#5E4E2B"],
@@ -292,6 +439,7 @@ const DAHAB_PLATINUM_PRODUCTS = [
   {
     id: "mentha",
     name: "Mentha",
+    category: "platinum",
     image: "Shades/P5-Mentha.png",
     color: "green",
     swatch: ["#B7E6D8", "#4E8A77"],
@@ -301,6 +449,7 @@ const DAHAB_PLATINUM_PRODUCTS = [
   {
     id: "olive",
     name: "Olive",
+    category: "platinum",
     image: "Shades/P7-Olive.png",
     color: "green",
     swatch: ["#B8B77A", "#5F6932"],
@@ -310,6 +459,7 @@ const DAHAB_PLATINUM_PRODUCTS = [
   {
     id: "perle",
     name: "Perle",
+    category: "platinum",
     image: "Shades/P3-Perle.png",
     color: "grey",
     swatch: ["#D7D0CA", "#6F6B69"],
@@ -319,6 +469,7 @@ const DAHAB_PLATINUM_PRODUCTS = [
   {
     id: "rain",
     name: "Rain",
+    category: "platinum",
     image: "Shades/P6-Rain.png",
     color: "grey",
     swatch: ["#C9CEDA", "#5C6473"],
@@ -334,21 +485,59 @@ const PRODUCTS = [
   ...DAHAB_PRODUCTS,
 ];
 
+const CURRENT_PAGE = document.body.dataset.page || "home";
+
+function getPreviewCount() {
+  if (window.innerWidth < 560) return 2;
+  if (window.innerWidth < 980) return 3;
+  return 4;
+}
+
+function getRandomProducts(products, count) {
+  const shuffled = [...products];
+  for (let index = shuffled.length - 1; index > 0; index--) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[index]];
+  }
+  return shuffled.slice(0, count);
+}
+
+function getPreviewProducts(products) {
+  return getRandomProducts(products, getPreviewCount());
+}
+
+function getDahabPreviewProducts() {
+  const count = getPreviewCount();
+  if (count < 2) return getRandomProducts([...DAHAB_GOLD_SHADES, ...DAHAB_PLATINUM_PRODUCTS], count);
+
+  const goldProduct = getRandomProducts(DAHAB_GOLD_SHADES, 1)[0];
+  const platinumProduct = getRandomProducts(DAHAB_PLATINUM_PRODUCTS, 1)[0];
+  const selected = [goldProduct, platinumProduct];
+  const remaining = [...DAHAB_GOLD_SHADES, ...DAHAB_PLATINUM_PRODUCTS]
+    .filter((product) => !selected.includes(product));
+
+  return getRandomProducts([...selected, ...getRandomProducts(remaining, count - 2)], count);
+}
+
 /* ================================ RENDERING ================================ */
 
 function cardHTML(p) {
+  const collectionName = p.category === "gold" ? "Gold Collection" : "Platinum Collection";
+  const displayName = ["home", "cart"].includes(CURRENT_PAGE) && p.category
+    ? `${p.name} (${collectionName})`
+    : p.name;
+
   return `
-    <article class="card" id="${p.id}" data-id="${p.id}" data-name="${p.name.toLowerCase()}" data-color="${p.color}">
+    <article class="card" id="${p.id}" data-id="${p.id}" data-name="${p.name.toLowerCase()}" data-color="${p.color}" tabindex="0" role="link" aria-label="View ${displayName}">
       <div class="card-media">
         <span class="badge-sale">Sale</span>
         <img src="${p.image}" alt="${p.name} colored contact lens" loading="lazy">
-        <button class="buy-btn" data-id="${p.id}">
-          <svg viewBox="0 0 24 24"><path d="M17.5 14.4c-.3-.1-1.7-.8-1.9-.9-.3-.1-.4-.1-.6.1-.2.3-.7.9-.8 1-.2.2-.3.2-.5.1-.3-.1-1.2-.4-2.2-1.4-.8-.7-1.4-1.6-1.5-1.9-.2-.3 0-.4.1-.6l.4-.5c.1-.2.2-.3.2-.5.1-.2 0-.4 0-.5-.1-.1-.6-1.5-.8-2-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s1 2.6 1.1 2.7c.1.2 2 3 4.7 4.2.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.6-.1 1.7-.7 1.9-1.3.2-.7.2-1.2.2-1.3-.1-.1-.3-.2-.5-.3z"/><path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3.1.8.8-3-.2-.3A8.2 8.2 0 1 1 12 20.2z"/></svg>
-          Buy on WhatsApp
+        <button class="buy-btn" type="button" data-id="${p.id}" data-action="add-to-cart">
+          <span class="btn-label">Add to cart</span>
         </button>
       </div>
       <div class="card-body">
-        <p class="name"><a href="#${p.id}">${p.name}</a></p>
+        <p class="name"><a href="product.html?id=${p.id}">${displayName}</a></p>
         <div class="price-row">
           <span class="was">Rs.${p.price.toLocaleString()}.00 PKR</span>
           <span class="now">Rs.${p.sale.toLocaleString()}.00 PKR</span>
@@ -359,6 +548,8 @@ function cardHTML(p) {
 
 const grid = document.getElementById("grid");
 const dahabGrids = document.querySelectorAll("#grid-dahab-gold, #grid-dahab-platinum");
+const cartKoreanGrid = document.getElementById("cartKoreanGrid");
+const cartDahabGrid = document.getElementById("cartDahabGrid");
 const emptyState = document.getElementById("emptyState");
 const resultsCount = document.getElementById("resultsCount");
 const resultsTitle = document.getElementById("resultsTitle");
@@ -366,6 +557,8 @@ const filterClear = document.getElementById("filterClear");
 const colorNav = document.getElementById("colorNav");
 
 function buildNavigation() {
+  if (!colorNav) return;
+
   colorNav.innerHTML = [
     `<a href="#shop" class="active">Shop</a>`,
     `<a href="#tools">Tools</a>`,
@@ -375,28 +568,74 @@ function buildNavigation() {
 }
 
 function renderGrid() {
-  if (grid) {
-    grid.innerHTML = KOREAN_PRODUCTS.map(cardHTML).join("");
+  if (!grid) return;
+
+  let items = KOREAN_PRODUCTS;
+  if (CURRENT_PAGE === "home") {
+    items = getPreviewProducts(KOREAN_PRODUCTS);
+  }
+  if (CURRENT_PAGE === "dahab") {
+    items = DAHAB_PRODUCTS;
+  }
+
+  grid.innerHTML = items.map(cardHTML).join("");
+
+  const viewAllKorean = document.getElementById("viewAllKorean");
+  if (viewAllKorean) {
+    viewAllKorean.hidden = CURRENT_PAGE !== "home";
   }
 }
 
 function renderDahabGrid() {
   const goldGrid = document.getElementById("grid-dahab-gold");
   const platinumGrid = document.getElementById("grid-dahab-platinum");
-  if (goldGrid) goldGrid.innerHTML = DAHAB_GOLD_SHADES.map(cardHTML).join("");
-  if (platinumGrid) platinumGrid.innerHTML = DAHAB_PLATINUM_PRODUCTS.map(cardHTML).join("");
+
+  if (CURRENT_PAGE === "home") {
+    const previewProducts = getDahabPreviewProducts();
+    if (goldGrid) goldGrid.innerHTML = previewProducts.map(cardHTML).join("");
+    if (platinumGrid) platinumGrid.innerHTML = "";
+    const viewAllDahab = document.getElementById("viewAllDahab");
+    if (viewAllDahab) viewAllDahab.hidden = false;
+    return;
+  }
+
+  if (goldGrid) {
+    goldGrid.innerHTML = DAHAB_GOLD_SHADES.map(cardHTML).join("");
+  }
+  if (platinumGrid) {
+    platinumGrid.innerHTML = DAHAB_PLATINUM_PRODUCTS.map(cardHTML).join("");
+  }
+
+  const viewAllDahab = document.getElementById("viewAllDahab");
+  if (viewAllDahab) viewAllDahab.hidden = true;
 }
 
 if (grid || dahabGrids.length) {
   buildNavigation();
   renderGrid();
   renderDahabGrid();
+  window.addEventListener("resize", () => {
+    renderGrid();
+    renderDahabGrid();
+  });
+}
+
+if (cartKoreanGrid || cartDahabGrid) {
+  if (cartKoreanGrid) {
+    cartKoreanGrid.innerHTML = getPreviewProducts(KOREAN_PRODUCTS).map(cardHTML).join("");
+    attachBuyButtonListener(cartKoreanGrid);
+  }
+  if (cartDahabGrid) {
+    cartDahabGrid.innerHTML = getDahabPreviewProducts().map(cardHTML).join("");
+    attachBuyButtonListener(cartDahabGrid);
+  }
 }
 
 /* ================================ FILTER + SEARCH ================================ */
 
 let query = "";
 function formatColorTitle() {
+  if (CURRENT_PAGE === "dahab") return "Dahab lenses";
   return "Korean lenses";
 }
 
@@ -452,6 +691,7 @@ const toastText = document.getElementById("toastText");
 let toastTimer;
 
 function showToast(text) {
+  if (!toast || !toastText) return;
   toastText.textContent = text;
   toast.classList.add("show");
   clearTimeout(toastTimer);
@@ -469,13 +709,114 @@ function attachBuyButtonListener(gridElement) {
     if (!btn) return;
     const product = PRODUCTS.find((p) => p.id === btn.dataset.id);
     if (!product) return;
-    showToast(`Opening WhatsApp for ${product.name}…`);
-    openWhatsApp(productMessage(product));
+    addToCart(product.id, 1);
+    animateCartButton();
+    markAddedButton(product.id);
+    showToast(`${product.name} added to cart`);
   });
 }
 
 attachBuyButtonListener(grid);
 dahabGrids.forEach(attachBuyButtonListener);
+
+document.addEventListener("click", (event) => {
+  const card = event.target.closest(".card[data-id]");
+  if (!card || event.target.closest("a, button")) return;
+  window.location.href = `product.html?id=${encodeURIComponent(card.dataset.id)}`;
+});
+
+document.addEventListener("keydown", (event) => {
+  if (!event.target.matches(".card[data-id]") || !["Enter", " "].includes(event.key)) return;
+  event.preventDefault();
+  window.location.href = `product.html?id=${encodeURIComponent(event.target.dataset.id)}`;
+});
+
+function renderCartPage() {
+  const cartItems = document.getElementById("cartItems");
+  const cartEmpty = document.getElementById("cartEmpty");
+  const cartSubtotalEl = document.getElementById("cartSubtotal");
+  const cartTotalEl = document.getElementById("cartTotal");
+  const checkoutButton = document.getElementById("checkoutCart");
+  const clearCartButton = document.getElementById("clearCart");
+
+  if (!cartItems) return;
+
+  const cart = getCart();
+
+  if (!cart.length) {
+    cartItems.innerHTML = "";
+    if (cartEmpty) cartEmpty.hidden = false;
+    if (cartSubtotalEl) cartSubtotalEl.textContent = "Rs.0.00";
+    if (cartTotalEl) cartTotalEl.textContent = "Rs.0.00";
+    if (checkoutButton) checkoutButton.disabled = true;
+    return;
+  }
+
+  if (cartEmpty) cartEmpty.hidden = true;
+  const subtotal = cartSubtotal();
+  if (cartSubtotalEl) cartSubtotalEl.textContent = `Rs.${subtotal.toLocaleString()}.00`;
+  if (cartTotalEl) cartTotalEl.textContent = `Rs.${subtotal.toLocaleString()}.00`;
+  if (checkoutButton) checkoutButton.disabled = false;
+
+  cartItems.innerHTML = cart.map((item) => {
+    const product = findProductById(item.id);
+    if (!product) return "";
+    return `
+      <article class="cart-item" data-product-id="${product.id}">
+        <div class="cart-item-image-wrap">
+          <img src="${product.image}" alt="${product.name} colored contact lens" loading="lazy">
+        </div>
+        <div class="cart-item-details">
+          <div>
+            <h3>${product.name}</h3>
+            <p>Rs.${product.sale.toLocaleString()}.00 PKR each</p>
+          </div>
+          <div class="cart-item-actions">
+            <div class="quantity-box">
+              <button type="button" data-qty-action="decrease" data-product-id="${product.id}" aria-label="Decrease quantity">−</button>
+              <span>${item.qty}</span>
+              <button type="button" data-qty-action="increase" data-product-id="${product.id}" aria-label="Increase quantity">+</button>
+            </div>
+            <button type="button" class="remove-item" data-remove-item="${product.id}">Remove</button>
+          </div>
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  cartItems.querySelectorAll("[data-qty-action]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const productId = button.dataset.productId;
+      const delta = button.dataset.qtyAction === "increase" ? 1 : -1;
+      updateCartQuantity(productId, delta);
+    });
+  });
+
+  cartItems.querySelectorAll("[data-remove-item]").forEach((button) => {
+    button.addEventListener("click", () => {
+      removeFromCart(button.dataset.removeItem);
+    });
+  });
+
+  if (checkoutButton) {
+    checkoutButton.onclick = (event) => {
+      event.preventDefault();
+      openWhatsApp(buildCartWhatsAppMessage());
+    };
+  }
+
+  if (clearCartButton) {
+    clearCartButton.onclick = (event) => {
+      event.preventDefault();
+      clearCart();
+    };
+  }
+}
+
+if (document.getElementById("cartItems") || document.getElementById("cartButton")) {
+  updateCartButton();
+  renderCartPage();
+}
 
 const contactLink = document.getElementById("waContactUs");
 const trackOrderLink = document.getElementById("waTrackOrder");
@@ -622,13 +963,24 @@ if (finderProductGrid) {
           <span class="badge-sale">Sale</span>
           <img src="${finderImage(product)}" alt="${product.name} colored contact lens" loading="lazy">
           <div class="swatch swatch-${product.id}"></div>
-          <a class="buy-btn" href="${buildWhatsAppLink(finderMessage(product))}">Buy on WhatsApp</a>
+          <button class="buy-btn" type="button" data-id="${product.id}">Add to cart</button>
         </div>
         <div class="card-body">
           <p class="name"><a href="../index.html#${product.id}">${product.name}</a></p>
           <div class="price-row"><span class="was">Rs.${product.price.toLocaleString()}.00 PKR</span><span class="now">Rs.${product.sale.toLocaleString()}.00 PKR</span></div>
         </div>
       </article>`).join("");
+
+    finderProductGrid.querySelectorAll(".buy-btn").forEach((button) => {
+      button.addEventListener("click", () => {
+        const product = findProductById(button.dataset.id);
+        if (!product) return;
+        addToCart(product.id, 1);
+        animateCartButton();
+        markAddedButton(product.id);
+        showToast(`${product.name} added to cart`);
+      });
+    });
   }
 
   function updateFinderMenu() {
@@ -670,8 +1022,14 @@ if (finderProductGrid) {
     finderResultName.textContent = product.name;
     finderResultOldPrice.textContent = `Rs.${product.price.toLocaleString()}.00 PKR`;
     finderResultPrice.textContent = `Rs.${product.sale.toLocaleString()}.00 PKR`;
-    finderResultBuy.href = buildWhatsAppLink(finderMessage(product));
     finderResultBuy.hidden = false;
+    finderResultBuy.onclick = (event) => {
+      event.preventDefault();
+      addToCart(product.id, 1);
+      animateCartButton();
+      markAddedButton(product.id);
+      showToast(`${product.name} added to cart`);
+    };
   }
 
   function updateFinder() {

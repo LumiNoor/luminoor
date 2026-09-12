@@ -28,7 +28,7 @@
   <meta property="og:type" content="website">
 </head>
 
-<body>
+<body data-page="home">
 
   <div class="topbar">Cash on Delivery Available · Free delivery across Pakistan on orders over Rs.5,000</div>
 
@@ -57,6 +57,15 @@
             <path d="M21 21l-4.3-4.3" />
           </svg>
         </button>
+        <a class="cart-button" id="cartButton" href="cart.html" aria-label="Open cart">
+          <svg class="cart-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L21 8H6" />
+            <circle cx="9" cy="20" r="1.2" />
+            <circle cx="18" cy="20" r="1.2" />
+          </svg>
+          <span class="cart-label">Cart</span>
+          <span class="cart-badge" hidden>0</span>
+        </a>
         <a class="whatsapp-header-btn"
           href="https://wa.me/923372110771?text=Hi%20LumiNoor!%20I%20have%20a%20question%20about%20your%20lenses."
           target="_blank" rel="noopener" aria-label="Contact LumiNoor on WhatsApp">
@@ -132,6 +141,10 @@
         <!-- Product cards are rendered by script.js from the KOREAN_PRODUCTS array -->
       </div>
 
+      <div class="section-actions">
+        <a href="korean-lenses.html" id="viewAllKorean" class="view-all-btn">Show all Korean lenses</a>
+      </div>
+
       <div class="empty-state" id="emptyState">
         <p class="display">No shades match that search</p>
         <p>Try a different name.</p>
@@ -147,14 +160,12 @@
         </div>
       </div>
 
-      <h3 class="display dahab-subtitle">Gold Collection</h3>
       <div class="grid" id="grid-dahab-gold">
-        <!-- Gold Dahab lenses are rendered by script.js. -->
+        <!-- Dahab preview shown on the homepage; full Gold/Platinum split on the dedicated Dahab page. -->
       </div>
 
-      <h3 class="display dahab-subtitle">Platinum Collection</h3>
-      <div class="grid" id="grid-dahab-platinum">
-        <!-- Platinum Dahab lenses are rendered by script.js. -->
+      <div class="section-actions">
+        <a href="dahab-lenses.html" id="viewAllDahab" class="view-all-btn">Show all Dahab lenses</a>
       </div>
     </div>
   </section>
@@ -200,8 +211,7 @@
         </details>
         <details class="faq-item">
           <summary>How do I order?</summary>
-          <p>Tap "Buy on WhatsApp" on any lens — it opens a pre-filled chat with the shade and price. We confirm stock,
-            then arrange COD delivery.</p>
+          <p>You can add a shade to your cart, review all your selections, and check out on WhatsApp with the full order summary. For a single shade, open its product page and tap "Ask on WhatsApp" to message us directly. We confirm stock, then arrange COD delivery.</p>
         </details>
         <details class="faq-item">
           <summary>Can I wear these every day?</summary>
@@ -253,6 +263,12 @@
                 <circle cx="17.5" cy="6.5" r="1" fill="currentColor" />
               </svg>
             </a>
+            <a class="social-btn" href="https://www.threads.net/@yoursownluminoor" target="_blank"
+              rel="noopener noreferrer" aria-label="Follow LumiNoor on Threads">
+              <svg class="threads-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M17.8 9.2c-.5-3.1-2.4-4.8-5.7-4.8-3.7 0-6 2.4-6 6.6 0 4.5 2.4 7.2 6.5 7.2 3.1 0 5.2-1.5 5.2-3.8 0-2.1-1.6-3.3-4.1-3.3-1.8 0-3 .7-3 1.8 0 .9.8 1.5 1.9 1.5 1.2 0 2.1-.4 2.7-1.2 1 .3 1.5.8 1.5 1.6 0 1.2-1.2 2-3.2 2-3.1 0-4.9-1.9-4.9-5.8 0-3.3 1.7-5 4.5-5 2.5 0 4 1.3 4.3 3.8" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </a>
             <a class="social-btn" href="https://wa.me/923372110771?text=Hi%20LumiNoor!%20I%20have%20a%20question%20about%20your%20lenses."
               target="_blank" rel="noopener noreferrer" aria-label="Contact LumiNoor on WhatsApp">
               <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -270,7 +286,7 @@
     </div>
   </footer>
 
-  <!-- Toast shown briefly after a "Buy on WhatsApp" tap, before the WhatsApp tab opens -->
+  <!-- Toast shown briefly after a product is added to the cart. -->
   <div class="toast" id="toast"><span class="dot"></span><span id="toastText">Opening WhatsApp…</span></div>
 
   <!-- All product data + WhatsApp buy logic + tools logic lives in script.js -->
