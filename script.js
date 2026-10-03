@@ -19,18 +19,41 @@ const WHATSAPP_NUMBER = "923372110771";
 const CART_STORAGE_KEY = "luminoor-cart";
 
 const announcementTrack = document.querySelector(".topbar-track");
-if (announcementTrack && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-  let announcementIndex = 0;
-  setInterval(() => {
-    announcementIndex = (announcementIndex + 1) % announcementTrack.children.length;
-    announcementTrack.style.transform = `translateX(-${announcementIndex * 100}vw)`;
-  }, 3200);
+if (announcementTrack) {
+  announcementTrack.setAttribute("aria-live", "polite");
 }
 
 function buildWhatsAppLink(message) {
   const encoded = encodeURIComponent(message);
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encoded}`;
 }
+
+const siteScript = [...document.scripts].find((script) => /(?:^|\/)script\.js(?:\?|$)/.test(script.src));
+const whatsappFloat = document.createElement("a");
+whatsappFloat.className = "whatsapp-float";
+whatsappFloat.href = buildWhatsAppLink("Hi LumiNoor! I have a question about your lenses.");
+whatsappFloat.target = "_blank";
+whatsappFloat.rel = "noopener noreferrer";
+whatsappFloat.setAttribute("aria-label", "Contact LumiNoor on WhatsApp");
+whatsappFloat.title = "Contact LumiNoor on WhatsApp";
+
+const whatsappFloatIcon = document.createElement("img");
+whatsappFloatIcon.src = new URL("assets/icons/whatsapp.svg", new URL(".", siteScript?.src || document.baseURI)).href;
+whatsappFloatIcon.alt = "";
+whatsappFloatIcon.setAttribute("aria-hidden", "true");
+whatsappFloat.append(whatsappFloatIcon);
+
+try {
+  const introKey = "luminoor-whatsapp-float-intro";
+  if (!sessionStorage.getItem(introKey)) {
+    whatsappFloat.classList.add("is-intro");
+    sessionStorage.setItem(introKey, "shown");
+  }
+} catch (error) {
+  whatsappFloat.classList.add("is-intro");
+}
+
+document.body.append(whatsappFloat);
 
 function getCart() {
   try {
@@ -545,18 +568,12 @@ function cardHTML(p) {
         <img src="${p.image}" alt="${p.name} colored contact lens" loading="lazy">
         <div class="card-actions">
           <a class="card-whatsapp-btn" href="${buildWhatsAppLink(productMessage(p))}" target="_blank" rel="noopener" aria-label="Buy ${displayName} on WhatsApp">
-            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <path d="M17.5 14.4c-.3-.1-1.7-.8-1.9-.9-.3-.1-.4-.1-.6.1-.2.3-.7.9-.8 1-.2.2-.3.2-.5.1-.3-.1-1.2-.4-2.2-1.4-.8-.7-1.4-1.6-1.5-1.9-.2-.3 0-.4.1-.6l.4-.5c.1-.2.2-.3.2-.5.1-.2 0-.4 0-.5-.1-.1-.6-1.5-.8-2-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s1 2.6 1.1 2.7c.1.2 2 3 4.7 4.2.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.6-.1 1.7-.7 1.9-1.3.2-.7.2-1.2.2-1.3-.1-.1-.3-.2-.5-.3z" />
               <path d="M12 2a10 10 0 1 0 8.6 15L22 22l-5.2-1.4A10 10 0 0 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3.1.8.8-3-.2-.3A8.2 8.2 0 1 1 12 20.2z" />
-            </svg>
             <span>Buy on WhatsApp</span>
           </a>
           <button class="buy-btn" type="button" data-id="${p.id}" data-action="add-to-cart">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M3 4h2l2.2 11.2a2 2 0 0 0 2 1.6h7.9a2 2 0 0 0 1.9-1.4L21 8H6" />
-              <circle cx="9" cy="20" r="1.2" />
-              <circle cx="18" cy="20" r="1.2" />
-            </svg>
+            <img class="card-cart-icon" src="assets/icons/cart.svg" alt="" aria-hidden="true">
             <span class="btn-label">Add to cart</span>
           </button>
         </div>
@@ -580,6 +597,20 @@ const resultsCount = document.getElementById("resultsCount");
 const resultsTitle = document.getElementById("resultsTitle");
 const filterClear = document.getElementById("filterClear");
 const colorNav = document.getElementById("colorNav");
+const navToggle = document.getElementById("navToggle");
+const navScrim = document.getElementById("navScrim");
+
+if (navToggle) {
+  navToggle.remove();
+}
+
+if (navScrim) {
+  navScrim.remove();
+}
+
+if (document.body.classList.contains("nav-open")) {
+  document.body.classList.remove("nav-open");
+}
 
 function buildNavigation() {
   if (!colorNav) return;

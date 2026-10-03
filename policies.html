@@ -12,8 +12,12 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,600;1,9..144,500&family=Manrope:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=20260912-2">
-    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+    <link rel="stylesheet" href="style.css?v=20261003-1">
+    <link rel="icon" type="image/x-icon" href="assets/favicon.ico?v=20260912-2">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon-32x32.png?v=20260912-2">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon-16x16.png?v=20260912-2">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/apple-touch-icon.png">
+    <link rel="manifest" href="site.webmanifest?v=20260912-2">
     <meta name="theme-color" content="#f7d9d0">
     <style>
         .policies-container {
@@ -30,7 +34,7 @@
         }
 
         .policies-container .intro {
-            color: #666;
+            color: var(--ink-soft);
             margin-bottom: 40px;
             font-size: 1.1rem;
         }
@@ -40,7 +44,7 @@
             margin-top: 40px;
             margin-bottom: 15px;
             font-family: 'Fraunces', serif;
-            border-bottom: 2px solid #f0f0f0;
+            border-bottom: 2px solid var(--line);
             padding-bottom: 10px;
         }
 
@@ -53,7 +57,7 @@
 
         .policies-container p {
             margin-bottom: 15px;
-            color: #333;
+            color: var(--ink);
         }
 
         .policies-container ul {
@@ -63,25 +67,25 @@
 
         .policies-container li {
             margin-bottom: 8px;
-            color: #333;
+            color: var(--ink);
         }
 
         .policies-container strong {
-            color: #000;
+            color: var(--ink);
         }
 
         .last-updated {
-            color: #999;
+            color: var(--ink-soft);
             font-size: 0.9rem;
             margin-top: 60px;
             padding-top: 20px;
-            border-top: 1px solid #eee;
+            border-top: 1px solid var(--line);
         }
 
         .back-link {
             display: inline-block;
             margin-bottom: 40px;
-            color: #d4739f;
+            color: var(--fg);
             text-decoration: none;
             font-weight: 500;
         }
@@ -98,23 +102,22 @@
 
     <header>
         <div class="wrap header-row">
-            <a href="index.html" class="logo">
-                <img src="assets/luminoorlogo.svg" class="mark" alt="LumiNoor logo">
-                LumiNoor
+            <a href="index.html" class="logo" aria-label="LumiNoor home">
+                <img src="assets/TitleLogo.png" class="mark" alt="LumiNoor logo">
             </a>
-            <nav class="main-nav">
+
+            <nav class="main-nav" id="colorNav" aria-label="Main navigation">
                 <a href="index.html#shop">Shop</a>
                 <a href="index.html#tools">Tools</a>
                 <a href="index.html#faq">FAQ</a>
+                <a href="policies.html" class="active">Policies</a>
             </nav>
+
             <div class="header-actions">
-                <a class="whatsapp-header-btn" href="https://wa.me/923372110771?text=Hi%20LumiNoor!%20I%20have%20a%20question%20about%20your%20lenses."
-                    target="_blank" rel="noopener noreferrer" aria-label="Contact LumiNoor on WhatsApp">
-                    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                        <path d="M17.5 14.4c-.3-.1-1.7-.8-1.9-.9-.3-.1-.4-.1-.6.1-.2.3-.7.9-.8 1-.2.2-.3.2-.5.1-.3-.1-1.2-.4-2.2-1.4-.8-.7-1.4-1.6-1.5-1.9-.2-.3 0-.4.1-.6l.4-.5c.1-.2.2-.3.2-.5.1-.2 0-.4 0-.5-.1-.1-.6-1.5-.8-2-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.2s1 2.6 1.1 2.7c.1.2 2 3 4.7 4.2.7.3 1.2.5 1.6.6.7.2 1.3.2 1.8.1.6-.1 1.7-.7 1.9-1.3.2-.7.2-1.2.2-1.3-.1-.1-.3-.2-.5-.3z" />
-                        <path d="M12 2a10 10 0 0 0-8.6 15L2 22l5.2-1.4A10 10 0 1 0 12 2zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3.1.8.8-3-.2-.3A8.2 8.2 0 1 1 12 20.2z" />
-                    </svg>
-                    <span>Contact WhatsApp</span>
+                <a class="cart-button" id="cartButton" href="cart.html" aria-label="Open cart">
+                    <img class="cart-icon" src="assets/icons/cart.svg" alt="" aria-hidden="true">
+                    <span class="cart-label">Cart</span>
+                    <span class="cart-badge" hidden>0</span>
                 </a>
             </div>
         </div>
@@ -339,25 +342,19 @@
                     <div class="social-links">
                         <a class="social-btn" href="https://www.facebook.com/yoursownluminoor" target="_blank"
                             rel="noopener noreferrer" aria-label="Follow LumiNoor on Facebook">
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
                                 <path d="M14 8h3V4h-3c-2.8 0-5 2.2-5 5v3H6v4h3v4h4v-4h3l1-4h-4V9c0-.6.4-1 1-1Z"
                                     fill="currentColor" />
-                            </svg>
                         </a>
                         <a class="social-btn" href="https://www.instagram.com/yoursownluminoor" target="_blank"
                             rel="noopener noreferrer" aria-label="Follow LumiNoor on Instagram">
-                            <svg viewBox="0 0 24 24" aria-hidden="true">
                                 <rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor"
                                     stroke-width="2" />
                                 <circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2" />
                                 <circle cx="17.5" cy="6.5" r="1" fill="currentColor" />
-                            </svg>
                         </a>
                         <a class="social-btn" href="https://www.threads.net/@yoursownluminoor" target="_blank"
                             rel="noopener noreferrer" aria-label="Follow LumiNoor on Threads">
-                            <svg class="threads-icon" viewBox="0 0 24 24" aria-hidden="true">
                                 <path d="M17.8 9.2c-.5-3.1-2.4-4.8-5.7-4.8-3.7 0-6 2.4-6 6.6 0 4.5 2.4 7.2 6.5 7.2 3.1 0 5.2-1.5 5.2-3.8 0-2.1-1.6-3.3-4.1-3.3-1.8 0-3 .7-3 1.8 0 .9.8 1.5 1.9 1.5 1.2 0 2.1-.4 2.7-1.2 1 .3 1.5.8 1.5 1.6 0 1.2-1.2 2-3.2 2-3.1 0-4.9-1.9-4.9-5.8 0-3.3 1.7-5 4.5-5 2.5 0 4 1.3 4.3 3.8" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" />
-                            </svg>
                         </a>
                     </div>
                 </div>
@@ -368,6 +365,8 @@
             </div>
         </div>
     </footer>
+
+    <script src="script.js?v=20260912-2"></script>
 
 </body>
 
